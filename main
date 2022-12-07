@@ -1,0 +1,140 @@
+import customtkinter
+import tkinter
+from nltk.stem.snowball import FrenchStemmer
+from collections import Counter
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import numpy as np
+import os
+#set theme
+customtkinter.set_appearance_mode("dark")
+customtkinter.set_default_color_theme("dark-blue")
+app = customtkinter.CTk()
+app.geometry("300x275")
+app.title("SEARCH")
+
+def Getword(data):
+  li=[]
+  li=word_tokenize(data)
+  return li
+def Delet_stopword(data):
+  token=[words for words in data if not words.lower() in stopwords.words()]
+  return token
+stemmer=FrenchStemmer()
+def normalisation(data):
+  list=[]
+  for word in data:
+    list.append(stemmer.stem(word))
+  return list
+def nombre_occ(data):
+  list=[]
+  for word in data:
+    count=Counter(data)
+    list.append(count[word])
+  return list
+
+dataSet = np.zeros((6,3), dtype = object)
+economie = os.listdir("./corpus/economie")
+i = -1
+for fileName in economie:
+  File=open("./corpus/economie/"+fileName,'r',encoding='UTF-8')
+  data1=File.read()
+  data_TOK = Getword(data1)
+  data_TOK_ST = Delet_stopword(data_TOK)
+  data_Norm= normalisation(data_TOK_ST)
+  data_NB_occ=nombre_occ(data_Norm)
+  i = i+1
+  dataSet[i,0] = data_Norm
+  dataSet[i,1] = data_NB_occ
+  dataSet[i,2] = "./corpus/economie/"+fileName
+association=os.listdir("./corpus/association")
+for fileName in association:
+  File1=open("./corpus/association/"+fileName,'r',encoding='UTF-8')
+  data2=File1.read()
+  data_TOK1=Getword(data2)
+  data_TOK_ST1=Delet_stopword(data_TOK1)
+  data_Norm1= normalisation(data_TOK_ST1)
+  data_NB_occ1=nombre_occ(data_Norm1)
+  i = i+1
+  dataSet[i,0]=data_Norm1
+  dataSet[i,1]=data_NB_occ1
+  dataSet[i,2]="./corpus/association/"+fileName
+def recherche_corrs_requ_mots(requet,matric_mots_cles):
+  ret=Getword(requet)
+  tokens_without_sw=Delet_stopword(ret)
+  motn=normalisation(tokens_without_sw)
+  listdocmper=[]
+  for i in range(0,6):
+    test=0
+    for j in range(0,len(motn)):
+       if motn[j] in matric_mots_cles[i,0]:
+           test+=1
+    if test>0:
+        listdocmper.append(matric_mots_cles[i,2])
+  return listdocmper
+def search():
+    vari=input_variable.get()
+    d=recherche_corrs_requ_mots(vari,dataSet)
+    # Toplevel object which will
+    # be treated as a new window
+    window = customtkinter.CTkToplevel()
+    # sets the geometry of toplevel
+    window.geometry("650x200")
+    frame = customtkinter.CTkFrame(master=window,fg_color="gray75")
+    frame.pack(pady=20, padx=10, fill="both", expand=True)
+    label15=customtkinter.CTkLabel(window,
+                               text="Liste de Réponse:",
+                               width=120,
+                               height=25,
+                                   font=("Helvetica", 22),
+                                   text_color="black",
+                                   fg_color=("gray75"),
+                               corner_radius=8)
+    label15.place(relx=0.5, rely=0.2, anchor=tkinter.CENTER)
+    label=customtkinter.CTkLabel(window,
+                               text=d,
+                               width=120,
+                                text_color="black",
+                               height=25,fg_color=( "gray75"),
+                                 font=("Helvetica", 22),
+                               corner_radius=8)
+    label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
+#annuler
+def annuler():
+    input_variable.set('')
+input_variable = tkinter.StringVar()
+frame_1 = customtkinter.CTkFrame(master=app)
+frame_1.pack(pady=20, padx=10, fill="both", expand=True)
+
+entry = customtkinter.CTkEntry(master=frame_1,
+                               placeholder_text="write your request in here!",
+                               width=250,
+                             font=("Helvetica", 22),
+                               height=45,
+                               border_width=2,
+                               corner_radius=10,textvariable=input_variable)
+
+entry.place(relx=0.5, rely=0.2, anchor=tkinter.CENTER)
+
+button = customtkinter.CTkButton(master=frame_1,
+                                 width=250,
+                                 height=40,
+                                 border_width=0,
+                                 corner_radius=8,
+                                 font=("Helvetica", 22),
+                                 text="submit",
+                                 command=search
+                                 )
+button.place(relx=0.5, rely=0.45, anchor=tkinter.CENTER)
+button = customtkinter.CTkButton(master=frame_1,
+                                 width=250,
+                                 height=40,
+                                 border_width=0,
+                                 corner_radius=8,
+                                 font=("Helvetica", 22),
+                                 text="annuler",
+                                 command=annuler
+                                 )
+button.place(relx=0.5, rely=0.65, anchor=tkinter.CENTER)
+app.mainloop()
